@@ -156,7 +156,7 @@ td.num,th.num{text-align:right}
 <div id="loader">
   <div class="lbox">
     <h2>Carregar base histórica</h2>
-    <p>Selecione (ou arraste para cá) o arquivo JSON da base — <b>base_suporte_AAAA-MM-DD.json</b>. Os dados são lidos apenas no seu navegador; nada é enviado a servidores e o arquivo original não é alterado.</p>
+    <p>Selecione (ou arraste para cá) o arquivo JSON da base — <b>base_suporte_horarios_AAAA-MM-DD.json</b> (com horários) ou a versão anterior sem horários. Os dados são lidos apenas no seu navegador; nada é enviado a servidores e o arquivo original não é alterado.</p>
     <div class="drop" id="drop">Clique para escolher o arquivo ou solte-o aqui</div>
     <input type="file" id="file" accept=".json,application/json" hidden>
     <div id="lerr"></div>
@@ -207,6 +207,20 @@ td.num,th.num{text-align:right}
         </div>
       </div>
       <div class="chart" id="ch-mon"></div>
+    </div>
+
+
+    <div class="card full" id="card-hour" hidden>
+      <div class="ch">
+        <div><div class="ct">Horários de pico das demandas</div>
+        <div class="cs" id="hour-sub"></div></div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <div class="seg" id="seg-hour"><button data-m="total" class="on">Total</button><button data-m="avg">Média por dia de plantão</button></div>
+          <div class="legend" id="legend6"></div>
+        </div>
+      </div>
+      <div class="chart" id="ch-hour"></div>
+      <div class="tsum" id="hour-sum"></div>
     </div>
 
     <div class="card full">
@@ -272,7 +286,7 @@ const ROBOT='Robô Suporte', NOCLS='(sem classificação)';
 
 /* ═══════════════ ESTADO ═══════════════ */
 const DEF={year:'both',period:'cmp',dtype:'all',sys:'all',sector:'all',channel:'T',basis:'open'};
-let S={...DEF,day:null,tab:'dem',page:0,q:'',sort:{k:'ref',dir:-1},monthMode:'total',dayFilter:'all'};
+let S={...DEF,hourMode:'total',day:null,tab:'dem',page:0,q:'',sort:{k:'ref',dir:-1},monthMode:'total',dayFilter:'all'};
 let RAW=null,RECS=[],META={},SYSN=new Map(),CLSN=new Map();
 
 /* ═══════════════ UTILITÁRIOS ═══════════════ */
@@ -307,40 +321,46 @@ function prepare(raw,name){
   if(!raw||!Array.isArray(raw.tickets))throw new Error('Estrutura inesperada: o JSON deve conter a lista "tickets".');
   const all=[...raw.tickets.map(r=>[r,'T']),...(raw.whatsapp||[]).map(r=>[r,'W'])];
   const st={name,exportedAt:raw.exportedAt||'',nT:raw.tickets.length,nW:(raw.whatsapp||[]).length,invalid:0,dup:0,openBefore:0,tdBig:0,bigEx:[],emptyCls:0,c0604:0,c1906:0,overlap:0};
-  const seen=new Set(),idsT=new Set();let maxClose=0;
+  const seen=new Set(),idsT=new Set();let maxClose=0,hasTime=false;
   const sysF=new Map(),clsF=new Map(),recs=[];SYSN=new Map();CLSN=new Map();
   const bump=(m,k,f)=>{let x=m.get(k);if(!x){x=new Map();m.set(k,x)}x.set(f,(x.get(f)||0)+1)};
   for(const [r,ch] of all){
     const k=ch+r.id; if(seen.has(k))st.dup++; seen.add(k); if(ch==='T')idsT.add(String(r.id)); else if(idsT.has(String(r.id).replace(/^wa_/,'')))st.overlap++;
-    const close=Date.UTC(r.y,r.m-1,r.d);
-    if(isNaN(close)||new Date(close).getUTCDate()!==r.d){st.invalid++;continue}
-    if(close>maxClose)maxClose=close;
-    const td=Math.max(0,+r.td||0), open=close-td*DAY;
+    const P=t=>({ts:Date.UTC(+t.slice(0,4),+t.slice(5,7)-1,+t.slice(8,10)),h:t.length>=13?+t.slice(11,13):null,y:+t.slice(0,4),m:+t.slice(5,7)});
+    let A,F=null;
+    if(r.ab){A=P(String(r.ab));if(r.fe)F=P(String(r.fe))}
+    else{const c=Date.UTC(r.y,r.m-1,r.d);if(isNaN(c)||new Date(c).getUTCDate()!==r.d){st.invalid++;continue}
+      F={ts:c,h:null,y:r.y,m:r.m};const ot=c-Math.max(0,+r.td||0)*DAY;A={ts:ot,h:null,y:new Date(ot).getUTCFullYear(),m:new Date(ot).getUTCMonth()+1}}
+    if(isNaN(A.ts)||(F&&isNaN(F.ts))){st.invalid++;continue}
+    const open=A.ts,close=F?F.ts:null;
+    if(close!=null){if(close>maxClose)maxClose=close}else if(open>maxClose)maxClose=open;
+    const td=close!=null?Math.round((close-open)/DAY):null;
+    if(A.h!=null)hasTime=true;
     if(!String(r.cls||'').trim())st.emptyCls++;
-    if(td>=365){st.tdBig++;if(st.bigEx.length<4)st.bigEx.push(td)}
-    if(new Date(open).getUTCFullYear()<2025&&r.y>=2025)st.openBefore++;
-    if(ch==='T'){const k2=iso(close);if(k2==='2025-06-04')st.c0604++;if(k2==='2025-06-19')st.c1906++}
-    const tO=dayType(open),tC=dayType(close);
-    const yO=new Date(open).getUTCFullYear(),yC=r.y;
+    if(td!=null&&td>=365){st.tdBig++;if(st.bigEx.length<4)st.bigEx.push(td)}
+    if(A.y<2025&&F&&F.y>=2025)st.openBefore++;
+    if(ch==='T'&&close!=null){const k2=iso(close);if(k2==='2025-06-04')st.c0604++;if(k2==='2025-06-19')st.c1906++}
+    const tO=dayType(open),tC=close!=null?dayType(close):null;
+    const yO=A.y,yC=F?F.y:0;
     const keepO=tO&&YEARS.includes(yO), keepC=tC&&YEARS.includes(yC);
     if(!keepO&&!keepC)continue;
     const baseSys=String(r.cat||'').replace(/^\s*\d+\s*-\s*/,'').trim()||'(sem categoria)';
     const sysK=baseSys.toUpperCase(); bump(sysF,sysK,baseSys);
     const clsRaw=String(r.cls||'').trim(), clsK=clsRaw?clsRaw.toUpperCase():NOCLS;
     bump(clsF,clsK,clsRaw||NOCLS);
-    recs.push({id:String(r.id),ch,s:r.s,sysK,clsK,op:r.op||'',td,tp:r.tp,open,close,tO:keepO?tO:null,tC:keepC?tC:null,yO,mO:new Date(open).getUTCMonth()+1,yC,mC:r.m});
+    recs.push({id:String(r.id),ch,s:r.s,sysK,clsK,op:r.col||r.op||'',td,tp:r.tp,open,close,ho:A.h,hc:F?F.h:null,abS:r.ab||null,feS:r.fe||null,tO:keepO?tO:null,tC:keepC?tC:null,yO,mO:A.m,yC,mC:F?F.m:0});
   }
   // nomes de exibição = forma mais frequente
   const pick=m=>{const o=new Map();for(const [k,f] of m){let b,n=-1;for(const [x,c] of f)if(c>n){n=c;b=x}o.set(k,b)}return o};
   SYSN=pick(sysF);CLSN=pick(clsF);
   const cd=new Date(maxClose), last=cd.getUTCMonth()+1, isEnd=new Date(maxClose+DAY).getUTCDate()===1;
-  META={...st,cutoff:maxClose,cutYear:cd.getUTCFullYear(),lastFull:isEnd?last:Math.max(1,last-1),nRecs:recs.length};
+  META={...st,hasTime,xstats:raw.stats||null,cutoff:maxClose,cutYear:cd.getUTCFullYear(),lastFull:isEnd?last:Math.max(1,last-1),nRecs:recs.length};
   RECS=recs;
 }
 async function loadText(text,name,persist){
   const raw=JSON.parse(text); prepare(raw,name); RAW=raw;
   if(persist){try{await IDB.set('base',{name,text})}catch(e){}}
-  $('#loader').style.display='none'; $('#main').hidden=false;
+  notesDone=false; $('#loader').style.display='none'; $('#main').hidden=false;
   initFilters(); render();
 }
 function showErr(m){const e=$('#lerr');e.textContent=m;e.style.display='block'}
@@ -359,7 +379,7 @@ $('#drop').addEventListener('drop',e=>handleFile(e.dataTransfer.files[0]));
 (async function boot(){
   try{const c=await IDB.get('base');if(c&&c.text){await loadText(c.text,c.name,false);return}}catch(e){}
   if(/^https?:/.test(location.protocol)){
-    for(const n of ['base_suporte_2026-11-04.json','base_suporte.json']){
+    for(const n of ['base_suporte_horarios_2026-11-04.json','base_suporte_2026-11-04.json']){
       try{const r=await fetch(n);if(r.ok){await loadText(await r.text(),n,true);return}}catch(e){}
     }
   }
@@ -388,6 +408,7 @@ const MAP={'f-year':'year','f-period':'period','f-dtype':'dtype','f-sys':'sys','
 for(const id in MAP)$('#'+id).onchange=e=>{S[MAP[id]]=e.target.value;S.day=null;S.page=0;render()};
 $('#btn-clear').onclick=()=>{Object.assign(S,DEF,{day:null,page:0,q:'',dayFilter:'all'});initFilters();render()};
 $('#seg-mon').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.monthMode=b.dataset.m;render()};
+$('#seg-hour').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.hourMode=b.dataset.m;render()};
 $('#seg-tab').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.tab=b.dataset.t;S.page=0;render()};
 
 /* ═══════════════ CÁLCULO ═══════════════ */
@@ -408,7 +429,7 @@ function compute(Y,basis){
   const recs=[],byDay=new Map();
   const typeTot={sab:0,dom:0,fer:0},typeDays={sab:0,dom:0,fer:0};
   const mon=Array.from({length:13},()=>({n:0,d:0}));
-  const sysM=new Map(),clsM=new Map(),ttc=[0,0,0,0];let waN=0,robot=0;
+  const sysM=new Map(),clsM=new Map(),ttc=[0,0,0,0],hours=new Array(24).fill(0);let waN=0,robot=0;
   for(const d of days){typeDays[d.t]++;mon[d.mo].d++}
   for(const r of RECS){
     const o=basis==='open', t=o?r.tO:r.tC; if(!t)continue;
@@ -417,7 +438,8 @@ function compute(Y,basis){
     const ts=o?r.open:r.close; recs.push({r,ts,t});
     byDay.set(ts,(byDay.get(ts)||0)+1); typeTot[t]++; mon[mo].n++;
     sysM.set(r.sysK,(sysM.get(r.sysK)||0)+1); clsM.set(r.clsK,(clsM.get(r.clsK)||0)+1);
-    ttc[r.td===0?0:r.td===1?1:r.td<=3?2:3]++;
+    if(r.td!=null)ttc[r.td===0?0:r.td===1?1:r.td<=3?2:3]++;
+    const hh=o?r.ho:r.hc;if(hh!=null)hours[hh]++;
     if(r.ch==='W'){waN++;if(r.op===ROBOT)robot++}
   }
   const total=recs.length, nd=days.length;
@@ -426,7 +448,7 @@ function compute(Y,basis){
   let zero=0;
   for(const d of days){const n=byDay.get(d.ts)||0;if(!n)zero++;hist[BINS.findIndex(b=>n>=b[0]&&n<=b[1])].n++}
   const top=days.map(d=>({ts:d.ts,t:d.t,n:byDay.get(d.ts)||0})).sort((a,b)=>b.n-a.n||b.ts-a.ts).slice(0,10);
-  return {Y,recs,days,byDay,typeTot,typeDays,mon,sysM,clsM,ttc,waN,robot,total,nd,zero,hist,top,
+  return {Y,recs,days,byDay,typeTot,typeDays,mon,sysM,clsM,ttc,hours,waN,robot,total,nd,zero,hist,top,
           avg:nd?total/nd:null,sab:typeTot.sab,dom:typeTot.dom,fer:typeTot.fer,
           topShare:total?top.reduce((s,x)=>s+x.n,0)/total*100:0};
 }
@@ -451,6 +473,7 @@ function chartV(el,o){
   const gw=pw/o.cats.length,inner=gw*0.8,bw=Math.min(40,inner/ys.length);
   o.cats.forEach((c,i)=>{
     const gx=m.l+i*gw,x0=gx+(gw-bw*ys.length)/2;
+    if(c.hl)g+=`<rect x="${gx}" y="${m.t}" width="${gw}" height="${ph}" fill="#eef3f8" pointer-events="none"/>`;
     g+=`<rect x="${gx}" y="${m.t}" width="${gw}" height="${ph}" fill="transparent" data-tip="${esc(c.tip||'')}"/>`;
     ys.forEach((y,j)=>{
       const v=c.vals[y],x=x0+j*bw;
@@ -499,7 +522,7 @@ function render(){
   if(S.period==='all'&&both)w+=`<div class="warn"><b>Atenção:</b> com “ano completo”, 2025 tem 12 meses e 2026 só vai até ${fmtD(META.cutoff)}. Para comparar de forma proporcional use <b>${MES[0]}–${MES[META.lastFull-1]} (período comparável)</b> ou observe a <b>média por dia de plantão</b>.</div>`;
   if(both&&c25.nd!==c26.nd)w+=`<div class="warn"><b>Atenção:</b> os períodos têm quantidades diferentes de dias de plantão (${c25.nd} em 2025 × ${c26.nd} em 2026). Compare principalmente a média por dia.</div>`;
   $('#warns').innerHTML=w;
-  renderNotes(); renderKpis(ys,c25,c26,both); renderMonthly(ys); renderTypes(ys); renderDist(ys); renderHist(ys); renderTops(ys); renderQA(ys,both);
+  renderNotes(); renderKpis(ys,c25,c26,both); renderMonthly(ys); renderHours(ys); renderTypes(ys); renderDist(ys); renderHist(ys); renderTops(ys); renderQA(ys,both);
   renderDetail(ys);
 }
 function renderKpis(ys,c25,c26,both){
@@ -537,6 +560,30 @@ function renderMonthly(ys){
   });
   $('#mon-sub').textContent=avg?'Média de demandas por dia de plantão em cada mês':'Total de demandas recebidas em cada mês';
   chartV($('#ch-mon'),{cats,years:ys,fmt:avg?v=>nf(v,1):undefined,h:270});
+}
+
+const HLO=9,HHI=18; // horário de plantão informado: 9h às 18h (9h00–17h59)
+function hourStats(c){
+  const h=c.hours,t=h.reduce((a,b)=>a+b,0);let pk=0;h.forEach((v,i)=>{if(v>h[pk])pk=i});
+  const day=h.slice(HLO,HHI).reduce((a,b)=>a+b,0),pre=h.slice(0,HLO).reduce((a,b)=>a+b,0),post=h.slice(HHI).reduce((a,b)=>a+b,0);
+  const top3=h.map((v,i)=>[i,v]).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).sort((a,b)=>a-b);
+  return {t,pk,pkN:h[pk],day,pre,post,top3};
+}
+function renderHours(ys){
+  const card=$('#card-hour');card.hidden=!META.hasTime;if(!META.hasTime)return;
+  const avg=S.hourMode==='avg';
+  $('#seg-hour').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.hourMode));
+  legend($('#legend6'),ys);
+  const base=S.basis==='open'?'abertura':'fechamento';
+  $('#hour-sub').textContent=`Hora de ${base} das demandas, por faixa de 1 hora (hora local) · sombreado = horário de plantão (${HLO}h–${HHI}h)`;
+  const cats=Array.from({length:24},(_,h)=>{
+    const vals={},tp=[];
+    ys.forEach(Y=>{const c=C[Y],n=c.hours[h];vals[Y]=avg?(c.nd?n/c.nd:null):n;tp.push(`<b>${Y}</b>: ${nf(n)} demandas (${nf(pc(n,c.total),1)}%) · média ${nf(c.nd?n/c.nd:null,2)}/dia`)});
+    return {label:String(h),hl:h>=HLO&&h<HHI,vals,tip:`<b>${String(h).padStart(2,'0')}h00 – ${String(h).padStart(2,'0')}h59</b><br>${tp.reverse().join('<br>')}`};
+  });
+  chartV($('#ch-hour'),{cats,years:ys,h:270,fmt:avg?v=>nf(v,1):undefined});
+  $('#hour-sum').innerHTML=ys.slice().reverse().map(Y=>{const c=C[Y];if(!c.total)return `<b>${Y}</b>: sem demandas.`;const x=hourStats(c);
+    return `<b style="color:${Y===2026?'#b53d00':'#003366'}">${Y}</b> — pico às <b>${x.pk}h</b> (${nf(x.pkN)}); 3 horas mais movimentadas: ${x.top3.map(h=>h+'h').join(', ')} · dentro do horário de plantão (${HLO}h–${HHI}h): <b>${nf(pc(x.day,x.t),0)}%</b> (${nf(x.day)}) · fora: <b>${nf(pc(x.pre+x.post,x.t),0)}%</b> (${nf(x.pre+x.post)}), sendo ${nf(pc(x.pre,x.t),0)}% antes das ${HLO}h e ${nf(pc(x.post,x.t),0)}% a partir das ${HHI}h`}).join('<br>');
 }
 function renderTypes(ys){
   legend($('#legend2'),ys);
@@ -611,6 +658,7 @@ function renderQA(ys,both){
   const q3=cm.total?`<li>Categoria predominante em ${Ym}: <b>${esc(ts.name)}</b> (${nf(ts.n)} · ${nf(ts.p,0)}%).</li>
     <li>Classificação predominante: <b>${esc(tc.name)}</b> (${nf(tc.n)} · ${nf(tc.p,0)}%).</li>
     ${mmax&&months1()?`<li>Mês de maior volume: <b>${MESL[mmax.m-1]}</b> (${nf(mmax.n)}).</li>`:''}
+    ${META.hasTime&&cm.total?(()=>{const x=hourStats(cm);return `<li>Horário de pico em ${Ym}: <b>${x.pk}h</b> (${nf(x.pkN)}); dentro do horário de plantão (${HLO}h–${HHI}h): <b>${nf(pc(x.day,x.t),0)}%</b>; fora dele: <b>${nf(pc(x.pre+x.post,x.t),0)}%</b>.</li>`})():''}
     <li>Os 10 maiores dias concentram <b>${nf(cm.topShare,0)}%</b> das demandas; o maior dia foi <b>${fmtD(t1.ts)}</b> (${t1.n}${HOLIDAYS[iso(t1.ts)]?', '+esc(HOLIDAYS[iso(t1.ts)]):''}).</li>`:'<li>Sem demandas com os filtros atuais.</li>';
   const q4=ys.slice().reverse().map(Y=>{const c=C[Y],a=t=>c.typeDays[t]?nf(c[t]/c.typeDays[t],1):'—';return `<li><b class="${Y===2026?'o':'n'}">${Y}</b>: <b>${nf(c.avg,1)}</b> por dia · sábado ${a('sab')} · domingo ${a('dom')} · feriado ${a('fer')}.</li>`}).join('');
   const q5=ys.slice().reverse().map(Y=>{const c=C[Y],le5=c.hist[0].n+c.hist[1].n,tt=c.ttc,tot=tt[0]+tt[1]+tt[2]+tt[3];
@@ -630,12 +678,13 @@ let notesDone=false;
 function renderNotes(){
   if(notesDone)return; notesDone=true;
   const M=META,items=[
-   `<b>Data de referência.</b> No JSON, <code>y/m/d</code> é a data de <b>fechamento</b> e <code>td</code> é o nº de dias até o fechamento. A data de <b>abertura</b> (demanda recebida) foi calculada como fechamento − <code>td</code>, com precisão de dia (sem horário). O painel usa a <b>abertura</b> por padrão; a alternância para fechamento está no filtro “Data de referência”. <b>A escolha altera de forma relevante os totais</b> — veja “Sensibilidade” na pergunta 2.`,
+   META.hasTime?`<b>Data de referência.</b> A base traz data e <b>hora</b> exatas de abertura e de fechamento (extraídas das planilhas Excel). O painel usa a <b>abertura</b> (demanda recebida) por padrão; a alternância para fechamento está no filtro “Data de referência”. <b>A escolha altera de forma relevante os totais</b> — veja “Sensibilidade” na pergunta 2.`:`<b>Data de referência.</b> No JSON, <code>y/m/d</code> é a data de <b>fechamento</b> e <code>td</code> é o nº de dias até o fechamento. A data de <b>abertura</b> (demanda recebida) foi calculada como fechamento − <code>td</code>, com precisão de dia (sem horário). O painel usa a <b>abertura</b> por padrão; a alternância para fechamento está no filtro “Data de referência”. <b>A escolha altera de forma relevante os totais</b> — veja “Sensibilidade” na pergunta 2.`,
    `<b>Somente chamados fechados.</b> A base contém registros já fechados até <b>${fmtD(M.cutoff)}</b>; demandas ainda abertas nessa data não constam, e 2026 cobre jan–${MES[M.lastFull-1].toLowerCase()}. Por isso o padrão é o <b>período comparável</b>. Por abertura, os últimos dias antes do corte podem estar subestimados.`,
    `<b>Corpus Christi (feriado móvel).</b> O enunciado cita 04/06; essa data vale para 2026, mas em 2025 o feriado foi <b>19/06</b>. Evidência na base: em 04/06/2025 há ${nf(M.c0604)} chamados fechados (dia útil normal) e em 19/06/2025 apenas ${nf(M.c1906)}. Foram adotados <b>19/06/2025</b> e <b>04/06/2026</b>. São Sebastião (20/01) e São Jorge (23/04) são fixos. Nenhum feriado coincide com sábado ou domingo em 2025–2026.`,
    `<b>Setores.</b> A base reúne 5 setores “Suporte …” (${SETORES.join('; ')}). Por padrão todos entram; use o filtro <b>Setor</b> para isolar, por exemplo, apenas “Suporte Técnico”.`,
    `<b>Canais.</b> Chamados (${nf(M.nT)}) e WhatsApp (${nf(M.nW)}) são fontes distintas, sem IDs em comum. O padrão é <b>Chamados</b>; o WhatsApp pode ser incluído no filtro Canal (inclui atendimentos do “${ROBOT}”).`,
-   `<b>Limites da base.</b> Chamados não têm horário nem operador: não é possível separar fechamento automático de atendimento humano de plantão, nem saber a hora em que a demanda chegou. Os números mostram volume, não esforço de atendimento.`,
+   META.hasTime?`<b>Horários e responsáveis.</b> Horas em horário local, como nas planilhas. “Colaborador/operador” indica quem <b>fechou</b> a demanda, não necessariamente quem a recebeu; WhatsApp inclui o “${ROBOT}”. O horário de plantão considerado é ${HLO}h–${HHI}h (informado pela área) e aparece sombreado no gráfico. Os números mostram volume, não esforço de atendimento.`:`<b>Limites da base.</b> Esta base (JSON v2) não tem horário nem responsável: o gráfico de horários fica oculto. Carregue a base com horários para habilitá-lo.`,
+   ...(M.xstats?[`<b>Reaberturas e duplicidades.</b> ${nf(M.xstats.reopenedTickets)} chamados e ${nf(M.xstats.reopenedWA)} atendimentos de WhatsApp aparecem em mais de um arquivo (mesma abertura, fechamentos diferentes); cada um foi contado <b>uma vez</b>, com o último fechamento. A planilha de setembro tem uma 2ª aba idêntica à primeira (ignorada). ${nf(M.xstats.waNotConcluded)} atendimentos de WhatsApp não concluídos foram mantidos (contam pela abertura). ${nf(M.xstats.jsonOnlyTickets)} chamados do JSON anterior não constam nas planilhas atuais, por isso os totais diferem levemente da versão anterior.`]:[]),
    `<b>Padronização de rótulos.</b> Para agrupar, foram removidos prefixos numéricos das categorias (ex.: “02 - SIGA 2” e “08-SIGA 2” → SIGA 2) e unificadas classificações que diferem só em maiúsculas/minúsculas. ${nf(M.emptyCls)} registros sem classificação aparecem como “${NOCLS}”. Os dados originais não foram alterados.`,
    `<b>Integridade.</b> ${nf(M.nRecs)} registros relevantes de ${nf(M.nT+M.nW)} lidos; IDs duplicados: ${M.dup}; datas inválidas: ${M.invalid}. Cada demanda é contada uma única vez, em um único dia e tipo de dia. ${M.tdBig?`Há ${M.tdBig} registro(s) com <code>td</code> ≥ 365 dias (ex.: ${M.bigEx.join(', ')}); por abertura caem antes de 2025 e ficam fora do recorte.`:''}`
   ];
@@ -649,6 +698,7 @@ function detailRows(ys){
   ys.forEach(Y=>C[Y].recs.forEach(x=>o.push(x)));
   return o;
 }
+const dtS=(str,ts)=>{if(str){const[a,b]=str.split(' ');return `${a.split('-').reverse().join('/')} ${(b||'').slice(0,5)}`}return ts==null?'—':fmtD(ts)};
 function typeTag(t,ts){return `<span class="tag ${t}">${TNAME[t]}${t==='fer'?': '+esc(HOLIDAYS[iso(ts)]||''):''}</span>`}
 function renderDetail(ys){
   $('#seg-tab').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
@@ -664,9 +714,9 @@ function renderDetail(ys){
     const pages=Math.max(1,Math.ceil(rows.length/PS));S.page=Math.min(S.page,pages-1);
     tools.innerHTML=`<input type="search" id="dq" placeholder="Buscar ticket, categoria, classificação, setor…" value="${esc(S.q)}">${dayTag}<span style="font-size:12px;color:var(--muted)">${nf(rows.length)} demanda(s)</span><div class="sp"></div><button class="btn" id="btn-csv">Exportar CSV</button>`;
     const th=(k,t,cls='')=>`<th data-k="${k}" class="${cls}">${t}${S.sort.k===k?(S.sort.dir>0?' ▲':' ▼'):''}</th>`;
-    const hasT=rows.some(x=>x.r.ch==='T'),hasW=rows.some(x=>x.r.ch==='W');
-    wrap.innerHTML=`<table class="dt"><thead><tr>${th('ref',S.basis==='open'?'Data (abertura)':'Data (fechamento)')}${th('t','Tipo de dia')}${th('id','Ticket / ID')}<th class="ns">Canal</th>${th('sec','Setor')}${th('sys','Categoria')}${th('cls','Classificação')}<th class="ns">Aberto em</th><th class="ns">Fechado em</th>${th('td','Dias até fechar','num')}${hasW?'<th class="ns">Operador</th>':''}</tr></thead><tbody>`+
-     rows.slice(S.page*PS,S.page*PS+PS).map(x=>{const r=x.r;return `<tr><td>${fmtD(x.ts)} <small style="color:var(--muted)">${DOW[dow(x.ts)]}</small></td><td>${typeTag(x.t,x.ts)}</td><td>${esc(r.id)}</td><td><span class="tag ${r.ch==='T'?'t':'w'}">${r.ch==='T'?'Chamado':'WhatsApp'}</span></td><td>${esc(SETORES[r.s]||'—')}</td><td>${esc(SYSN.get(r.sysK))}</td><td class="wrap">${esc(CLSN.get(r.clsK))}</td><td>${fmtD(r.open)}</td><td>${fmtD(r.close)}</td><td class="num">${r.td}</td>${hasW?`<td>${esc(r.op)}</td>`:''}</tr>`}).join('')+
+    const hasW=rows.some(x=>x.r.op);
+    wrap.innerHTML=`<table class="dt"><thead><tr>${th('ref',S.basis==='open'?'Data (abertura)':'Data (fechamento)')}${th('t','Tipo de dia')}${th('id','Ticket / ID')}<th class="ns">Canal</th>${th('sec','Setor')}${th('sys','Categoria')}${th('cls','Classificação')}<th class="ns">Aberto em</th><th class="ns">Fechado em</th>${th('td','Dias até fechar','num')}${hasW?'<th class="ns">Colaborador / operador</th>':''}</tr></thead><tbody>`+
+     rows.slice(S.page*PS,S.page*PS+PS).map(x=>{const r=x.r;return `<tr><td>${fmtD(x.ts)} <small style="color:var(--muted)">${DOW[dow(x.ts)]}</small></td><td>${typeTag(x.t,x.ts)}</td><td>${esc(r.id)}</td><td><span class="tag ${r.ch==='T'?'t':'w'}">${r.ch==='T'?'Chamado':'WhatsApp'}</span></td><td>${esc(SETORES[r.s]||'—')}</td><td>${esc(SYSN.get(r.sysK))}</td><td class="wrap">${esc(CLSN.get(r.clsK))}</td><td>${dtS(r.abS,r.open)}</td><td>${dtS(r.feS,r.close)}</td><td class="num">${r.td??'—'}</td>${hasW?`<td>${esc(r.op)}</td>`:''}</tr>`}).join('')+
      (rows.length?'':`<tr><td colspan="11" class="empty">Nenhuma demanda com os filtros atuais.</td></tr>`)+'</tbody></table>';
     wrap.querySelectorAll('th[data-k]').forEach(h=>h.onclick=()=>{const k=h.dataset.k;S.sort=S.sort.k===k?{k,dir:-S.sort.dir}:{k,dir:k==='ref'?-1:1};renderDetail(ys)});
     $('#btn-csv').onclick=()=>exportCsv(rows);
@@ -695,8 +745,8 @@ function pager(el,pages,n,PS,ys){
 }
 function exportCsv(dem,dias){
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';let L;
-  if(dem){L=[['Data de referência','Tipo de dia','Feriado','Ticket/ID','Canal','Setor','Categoria','Classificação','Aberto em','Fechado em','Dias até fechar','Operador']];
-    dem.forEach(x=>L.push([fmtD(x.ts),TNAME[x.t],HOLIDAYS[iso(x.ts)]||'',x.r.id,x.r.ch==='T'?'Chamado':'WhatsApp',SETORES[x.r.s]||'',SYSN.get(x.r.sysK),CLSN.get(x.r.clsK),fmtD(x.r.open),fmtD(x.r.close),x.r.td,x.r.op]))}
+  if(dem){L=[['Data de referência','Tipo de dia','Feriado','Ticket/ID','Canal','Setor','Categoria','Classificação','Aberto em','Fechado em','Dias até fechar','Colaborador/operador']];
+    dem.forEach(x=>L.push([fmtD(x.ts),TNAME[x.t],HOLIDAYS[iso(x.ts)]||'',x.r.id,x.r.ch==='T'?'Chamado':'WhatsApp',SETORES[x.r.s]||'',SYSN.get(x.r.sysK),CLSN.get(x.r.clsK),dtS(x.r.abS,x.r.open),dtS(x.r.feS,x.r.close),x.r.td??'',x.r.op]))}
   else{L=[['Data','Dia da semana','Tipo de dia','Feriado','Demandas']];dias.forEach(x=>L.push([fmtD(x.ts),DOW[dow(x.ts)],TNAME[x.t],HOLIDAYS[iso(x.ts)]||'',x.n]))}
   const blob=new Blob(['﻿'+L.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=dem?'demandas_plantao.csv':'dias_plantao.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
