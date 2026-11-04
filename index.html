@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plantão do Suporte — Fins de semana e feriados</title>
+<style>
+:root{
+  --navy:#003366; --navy-2:#00264d; --orange:#E8500A; --orange-d:#b53d00;
+  --orange-soft:#fff1e9; --orange-tag:#fde3d5;
+  --bg:#FFFFFF; --gray:#F5F5F5; --line:#e3e7ec;
+  --ink:#1d2733; --muted:#5b6b7c; --indet:#9aa7b4;
+  --navy-lt:#e6eef5; --navy-text:#b9c8d8;
+  --c25:#7794b3; --c26:#E8500A;
+  --shadow:0 1px 5px rgba(0,51,102,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Arial,system-ui,sans-serif;background:var(--gray);color:var(--ink);min-height:100vh;font-size:14px}
+button,select,input{font:inherit;color:inherit}
+
+/* topo fixo */
+.top{position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+header{background:var(--navy);padding:0 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid var(--orange);gap:16px}
+.brand{display:flex;align-items:center;gap:14px;padding:8px 0}
+.brand img{height:34px;width:auto;display:block}
+.brand h1{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.brand p{font-size:11px;color:var(--navy-text);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.chip-h{font-size:11px;color:var(--navy-text);padding:4px 10px;border:1px solid rgba(255,255,255,.18);border-radius:20px;white-space:nowrap}
+.btn-h{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;font-size:11.5px;padding:5px 11px;cursor:pointer}
+.btn-h:hover{background:rgba(255,255,255,.1)}
+
+#filters{background:var(--bg);border-bottom:1px solid var(--line);padding:9px 28px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.f select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#fff;font-size:12.5px;max-width:250px;min-width:150px;cursor:pointer}
+.f select:focus,.f input:focus{outline:2px solid var(--navy-lt);border-color:var(--navy)}
+.f.adv select{background:var(--navy-lt);border-color:#cbd9e6}
+.sp{flex:1}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--navy);font-weight:600}
+.btn:hover{background:var(--navy-lt)}
+
+main{max-width:1280px;margin:0 auto;padding:18px 28px 60px}
+.basis-line{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.basis-line b{color:var(--ink)}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700}
+.pill26{background:var(--orange-tag);color:var(--orange-d)}
+.pill25{background:var(--navy-lt);color:var(--navy)}
+.warn{background:#fff8e6;border:1px solid #f3dca0;color:#7a5a00;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px;line-height:1.45}
+
+details.notes{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:18px;box-shadow:var(--shadow)}
+details.notes summary{cursor:pointer;padding:10px 14px;font-weight:700;color:var(--navy);font-size:13px;list-style:none;display:flex;align-items:center;gap:8px}
+details.notes summary::-webkit-details-marker{display:none}
+details.notes summary::before{content:"▸";color:var(--orange);transition:transform .15s}
+details.notes[open] summary::before{transform:rotate(90deg)}
+.notes-body{padding:2px 18px 14px 30px;font-size:12.5px;color:var(--ink);line-height:1.55}
+.notes-body li{margin:7px 0}
+.notes-body b{color:var(--navy)}
+
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-top:3px solid var(--orange);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .kl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.kpi .kv{font-size:34px;font-weight:800;color:var(--orange);line-height:1.1;margin-top:6px;letter-spacing:-1px}
+.kpi .kv small{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:4px}
+.kpi .kr{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.kpi .kr b{color:var(--navy);font-size:15px}
+.kpi .ks{font-size:11px;color:var(--indet);margin-top:6px;line-height:1.4}
+.dl{display:inline-block;border-radius:5px;padding:2px 7px;font-size:11.5px;font-weight:700}
+.dl.up{background:var(--navy-lt);color:var(--navy)}
+.dl.dn{background:var(--orange-soft);color:var(--orange-d)}
+.dl.nd{background:var(--gray);color:var(--muted)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+.card.full{grid-column:1/-1}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.ct{font-size:14px;font-weight:700;color:var(--navy)}
+.cs{font-size:11.5px;color:var(--muted);margin-top:2px}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:4px 10px;font-size:11.5px;cursor:pointer;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--navy);color:#fff}
+.chart{width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{font-family:inherit}
+.twin{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.twin h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px}
+.empty{padding:26px;text-align:center;color:var(--indet);font-size:13px}
+
+.tops{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.tops h4{font-size:12px;margin-bottom:6px}
+.tops h4.y26{color:var(--orange-d)} .tops h4.y25{color:var(--navy)}
+.trow{display:grid;grid-template-columns:128px 1fr 42px;gap:8px;align-items:center;padding:3px 4px;border-radius:5px;cursor:pointer;font-size:12px}
+.trow:hover{background:var(--gray)}
+.trow .dn{white-space:nowrap}
+.trow .dn small{color:var(--muted);margin-left:4px}
+.tbar{height:10px;background:var(--gray);border-radius:5px;overflow:hidden}
+.tbar i{display:block;height:100%;border-radius:5px}
+.trow .tv{text-align:right;font-weight:700}
+.tsum{font-size:11.5px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.q{border:1px solid var(--line);border-left:3px solid var(--navy);border-radius:8px;padding:10px 14px;background:#fff}
+.q.last{grid-column:1/-1;border-left-color:var(--orange)}
+.q h4{font-size:12.5px;color:var(--navy);margin-bottom:5px}
+.q ul{list-style:none;font-size:12.5px;line-height:1.5}
+.q li{margin:3px 0;padding-left:12px;position:relative}
+.q li::before{content:"•";position:absolute;left:0;color:var(--orange)}
+.q p.fn{font-size:11.5px;color:var(--muted);margin-top:6px;font-style:italic}
+.q b.o{color:var(--orange-d)} .q b.n{color:var(--navy)}
+
+.tabs{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.tools input[type=search]{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12.5px;min-width:230px}
+.tools select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12.5px;background:#fff}
+.tagday{background:var(--orange-tag);color:var(--orange-d);border-radius:20px;padding:3px 6px 3px 12px;font-size:12px;font-weight:700;display:inline-flex;gap:6px;align-items:center}
+.tagday button{border:0;background:transparent;cursor:pointer;color:var(--orange-d);font-size:14px;line-height:1}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:560px}
+table.dt{border-collapse:collapse;width:100%;font-size:12px}
+table.dt th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;padding:8px 10px;font-size:11px;white-space:nowrap;font-weight:600;cursor:pointer;user-select:none}
+table.dt th.ns{cursor:default}
+table.dt td{padding:6px 10px;border-bottom:1px solid var(--gray);white-space:nowrap}
+table.dt td.wrap{white-space:normal;min-width:150px}
+table.dt tr:hover td{background:#f8fafc}
+td.num,th.num{text-align:right}
+.tag{border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700}
+.tag.sab{background:var(--navy-lt);color:var(--navy)}
+.tag.dom{background:#dfe9f3;color:#00264d}
+.tag.fer{background:var(--orange-tag);color:var(--orange-d)}
+.tag.t{background:var(--gray);color:var(--muted)}
+.tag.w{background:#e3f6ea;color:#1c7a3e}
+.pg{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:8px;font-size:12px;color:var(--muted)}
+
+#tip{position:fixed;z-index:200;background:var(--navy-2);color:#fff;border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.45;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:290px;display:none}
+#tip b{color:#ffb48a}
+
+#loader{position:fixed;inset:0;background:var(--gray);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+.lbox{background:#fff;border:1px solid var(--line);border-top:4px solid var(--orange);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:28px 32px;max-width:520px;width:100%;text-align:center}
+.lbox h2{color:var(--navy);font-size:18px;margin-bottom:8px}
+.lbox p{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.drop{border:2px dashed #b9c8d8;border-radius:10px;padding:26px 14px;cursor:pointer;color:var(--navy);font-weight:600;font-size:13px}
+.drop.over,.drop:hover{background:var(--navy-lt);border-color:var(--navy)}
+#lerr{color:#b93333;font-size:12.5px;margin-top:10px;display:none}
+
+@media(max-width:980px){.kpis{grid-template-columns:1fr 1fr}.grid2,.qa,.tops,.twin{grid-template-columns:1fr}main{padding:14px 14px 40px}header,#filters{padding-left:14px;padding-right:14px}.top{position:static}}
+@media(max-width:560px){.kpis{grid-template-columns:1fr}}
+@media print{
+  .top{position:static;box-shadow:none}#filters .btn,.btn-h,.seg,.tools,.pg,#detail-card{display:none!important}
+  body{background:#fff}.card,.kpi,.q{break-inside:avoid}main{padding:10px}
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="lbox">
+    <h2>Carregar base histórica</h2>
+    <p>Selecione (ou arraste para cá) o arquivo JSON da base — <b>base_suporte_AAAA-MM-DD.json</b>. Os dados são lidos apenas no seu navegador; nada é enviado a servidores e o arquivo original não é alterado.</p>
+    <div class="drop" id="drop">Clique para escolher o arquivo ou solte-o aqui</div>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div class="top">
+  <header>
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="FGV">
+      <div><h1>Plantão do Suporte — Fins de semana e feriados</h1>
+      <p>Comparativo 2025 × 2026 · subsídio à decisão sobre a estrutura de plantão</p></div>
+    </div>
+    <div class="hdr-right">
+      <span class="chip-h" id="hdr-base">—</span>
+      <button class="btn-h" id="btn-reload">Carregar outra base</button>
+      <button class="btn-h" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </header>
+  <div id="filters">
+    <div class="f"><label>Ano</label><select id="f-year"></select></div>
+    <div class="f"><label>Período (mês)</label><select id="f-period"></select></div>
+    <div class="f"><label>Tipo de dia</label><select id="f-dtype"></select></div>
+    <div class="f"><label>Categoria / sistema</label><select id="f-sys"></select></div>
+    <div class="f"><label>Setor</label><select id="f-sector"></select></div>
+    <div class="f adv"><label>Canal</label><select id="f-channel"></select></div>
+    <div class="f adv"><label>Data de referência</label><select id="f-basis"></select></div>
+    <div class="sp"></div>
+    <button class="btn" id="btn-clear">Restaurar padrão</button>
+  </div>
+</div>
+
+<main id="main" hidden>
+  <div class="basis-line" id="basis-line"></div>
+  <div id="warns"></div>
+  <details class="notes" id="notes"><summary id="notes-sum">Pontos de atenção sobre a base</summary><div class="notes-body" id="notes-body"></div></details>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid2">
+    <div class="card full">
+      <div class="ch">
+        <div><div class="ct">Evolução mensal das demandas em fins de semana e feriados</div>
+        <div class="cs" id="mon-sub">Demandas recebidas por mês</div></div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <div class="seg" id="seg-mon"><button data-m="total" class="on">Total</button><button data-m="avg">Média por dia de plantão</button></div>
+          <div class="legend" id="legend1"></div>
+        </div>
+      </div>
+      <div class="chart" id="ch-mon"></div>
+    </div>
+
+    <div class="card full">
+      <div class="ch">
+        <div><div class="ct">Sábados × domingos × feriados</div>
+        <div class="cs">Volume total e média por dia — a média neutraliza diferenças no número de dias de cada período</div></div>
+        <div class="legend" id="legend2"></div>
+      </div>
+      <div class="twin"><div><h4>Total de demandas</h4><div class="chart" id="ch-type-t"></div></div>
+      <div><h4>Média por dia de plantão</h4><div class="chart" id="ch-type-a"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div><div class="ct">Distribuição por categoria / sistema</div><div class="cs">Maiores categorias (valor · participação no total do ano)</div></div><div class="legend" id="legend3"></div></div>
+      <div class="chart" id="ch-sys"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">Distribuição por classificação</div><div class="cs">Principais motivos de contato (valor · participação)</div></div><div class="legend" id="legend4"></div></div>
+      <div class="chart" id="ch-cls"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div><div class="ct">Quantos dias de plantão tiveram cada faixa de demanda?</div><div class="cs">% dos dias de plantão por volume de demandas no dia</div></div><div class="legend" id="legend5"></div></div>
+      <div class="chart" id="ch-hist"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">Dias com maior volume</div><div class="cs">Clique em um dia para listar suas demandas abaixo</div></div></div>
+      <div class="tops" id="tops"></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom:14px">
+    <div class="ch"><div><div class="ct">Leitura dos números — perguntas-chave</div><div class="cs">Texto gerado automaticamente a partir dos filtros ativos; descreve os dados, sem emitir recomendação</div></div></div>
+    <div class="qa" id="qa"></div>
+  </section>
+
+  <section class="card" id="detail-card">
+    <div class="ch"><div><div class="ct">Detalhamento</div><div class="cs">Registros que compõem os indicadores acima (respeitam todos os filtros)</div></div>
+      <div class="tabs"><div class="seg" id="seg-tab"><button data-t="dem" class="on">Por demanda</button><button data-t="dia">Por dia de plantão</button></div></div>
+    </div>
+    <div class="tools" id="dtools"></div>
+    <div class="tw" id="dwrap"></div>
+    <div class="pg" id="dpg"></div>
+  </section>
+</main>
+<div id="tip"></div>
+
+<script>
+'use strict';
+/* ═══════════════ CONSTANTES ═══════════════ */
+const SETORES=['Suporte Sistemas MGM','Suporte Técnico ao Aluno','Suporte Técnico ao Professor','Suporte Técnico','Suporte ECLASS para as Conveniadas'];
+// Feriados considerados (RJ capital). Corpus Christi é móvel: 19/06/2025 e 04/06/2026.
+const HOLIDAYS={'2025-01-20':'São Sebastião','2025-04-23':'São Jorge','2025-06-19':'Corpus Christi',
+                '2026-01-20':'São Sebastião','2026-04-23':'São Jorge','2026-06-04':'Corpus Christi'};
+const YEARS=[2025,2026];
+const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DOW=['dom','seg','ter','qua','qui','sex','sáb'];
+const TNAME={sab:'Sábado',dom:'Domingo',fer:'Feriado'};
+const TPL={sab:'Sábados',dom:'Domingos',fer:'Feriados'};
+const DAY=864e5, COL={2025:'#7794b3',2026:'#E8500A'};
+const ROBOT='Robô Suporte', NOCLS='(sem classificação)';
+
+/* ═══════════════ ESTADO ═══════════════ */
+const DEF={year:'both',period:'cmp',dtype:'all',sys:'all',sector:'all',channel:'T',basis:'open'};
+let S={...DEF,day:null,tab:'dem',page:0,q:'',sort:{k:'ref',dir:-1},monthMode:'total',dayFilter:'all'};
+let RAW=null,RECS=[],META={},SYSN=new Map(),CLSN=new Map();
+
+/* ═══════════════ UTILITÁRIOS ═══════════════ */
+const $=s=>document.querySelector(s);
+const iso=ts=>new Date(ts).toISOString().slice(0,10);
+const fmtD=ts=>{const [y,m,d]=iso(ts).split('-');return `${d}/${m}/${y}`};
+const dow=ts=>new Date(ts).getUTCDay();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(n,d=0)=>(n==null||isNaN(n))?'—':n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pc=(a,b)=>b?(a/b*100):0;
+function dayType(ts){
+  const k=iso(ts); if(HOLIDAYS[k])return 'fer';
+  const w=dow(ts); return w===6?'sab':w===0?'dom':null;
+}
+function delta(a,b){ // a=2025, b=2026
+  if(a==null||b==null)return null; if(!a)return b?{t:'n/d',c:'nd'}:{t:'0%',c:'nd'};
+  const p=(b-a)/a*100; if(Math.abs(p)<0.05)return {t:'0,0%',c:'nd'};
+  return {t:(p>0?'▲ +':'▼ −')+nf(Math.abs(p),1)+'%',c:p>0?'up':'dn',p};
+}
+const dlHtml=d=>d?`<span class="dl ${d.c}">${d.t}</span>`:'';
+const sd=(s,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>s(...a),ms)}};
+
+/* ═══════════════ PERSISTÊNCIA (IndexedDB, opcional) ═══════════════ */
+const IDB={
+  open(){return new Promise((res,rej)=>{const q=indexedDB.open('plantao-dash',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+};
+
+/* ═══════════════ CARGA E PREPARO DA BASE ═══════════════ */
+function prepare(raw,name){
+  if(!raw||!Array.isArray(raw.tickets))throw new Error('Estrutura inesperada: o JSON deve conter a lista "tickets".');
+  const all=[...raw.tickets.map(r=>[r,'T']),...(raw.whatsapp||[]).map(r=>[r,'W'])];
+  const st={name,exportedAt:raw.exportedAt||'',nT:raw.tickets.length,nW:(raw.whatsapp||[]).length,invalid:0,dup:0,openBefore:0,tdBig:0,bigEx:[],emptyCls:0,c0604:0,c1906:0,overlap:0};
+  const seen=new Set(),idsT=new Set();let maxClose=0;
+  const sysF=new Map(),clsF=new Map(),recs=[];SYSN=new Map();CLSN=new Map();
+  const bump=(m,k,f)=>{let x=m.get(k);if(!x){x=new Map();m.set(k,x)}x.set(f,(x.get(f)||0)+1)};
+  for(const [r,ch] of all){
+    const k=ch+r.id; if(seen.has(k))st.dup++; seen.add(k); if(ch==='T')idsT.add(String(r.id)); else if(idsT.has(String(r.id).replace(/^wa_/,'')))st.overlap++;
+    const close=Date.UTC(r.y,r.m-1,r.d);
+    if(isNaN(close)||new Date(close).getUTCDate()!==r.d){st.invalid++;continue}
+    if(close>maxClose)maxClose=close;
+    const td=Math.max(0,+r.td||0), open=close-td*DAY;
+    if(!String(r.cls||'').trim())st.emptyCls++;
+    if(td>=365){st.tdBig++;if(st.bigEx.length<4)st.bigEx.push(td)}
+    if(new Date(open).getUTCFullYear()<2025&&r.y>=2025)st.openBefore++;
+    if(ch==='T'){const k2=iso(close);if(k2==='2025-06-04')st.c0604++;if(k2==='2025-06-19')st.c1906++}
+    const tO=dayType(open),tC=dayType(close);
+    const yO=new Date(open).getUTCFullYear(),yC=r.y;
+    const keepO=tO&&YEARS.includes(yO), keepC=tC&&YEARS.includes(yC);
+    if(!keepO&&!keepC)continue;
+    const baseSys=String(r.cat||'').replace(/^\s*\d+\s*-\s*/,'').trim()||'(sem categoria)';
+    const sysK=baseSys.toUpperCase(); bump(sysF,sysK,baseSys);
+    const clsRaw=String(r.cls||'').trim(), clsK=clsRaw?clsRaw.toUpperCase():NOCLS;
+    bump(clsF,clsK,clsRaw||NOCLS);
+    recs.push({id:String(r.id),ch,s:r.s,sysK,clsK,op:r.op||'',td,tp:r.tp,open,close,tO:keepO?tO:null,tC:keepC?tC:null,yO,mO:new Date(open).getUTCMonth()+1,yC,mC:r.m});
+  }
+  // nomes de exibição = forma mais frequente
+  const pick=m=>{const o=new Map();for(const [k,f] of m){let b,n=-1;for(const [x,c] of f)if(c>n){n=c;b=x}o.set(k,b)}return o};
+  SYSN=pick(sysF);CLSN=pick(clsF);
+  const cd=new Date(maxClose), last=cd.getUTCMonth()+1, isEnd=new Date(maxClose+DAY).getUTCDate()===1;
+  META={...st,cutoff:maxClose,cutYear:cd.getUTCFullYear(),lastFull:isEnd?last:Math.max(1,last-1),nRecs:recs.length};
+  RECS=recs;
+}
+async function loadText(text,name,persist){
+  const raw=JSON.parse(text); prepare(raw,name); RAW=raw;
+  if(persist){try{await IDB.set('base',{name,text})}catch(e){}}
+  $('#loader').style.display='none'; $('#main').hidden=false;
+  initFilters(); render();
+}
+function showErr(m){const e=$('#lerr');e.textContent=m;e.style.display='block'}
+function handleFile(f){
+  if(!f)return; const fr=new FileReader();
+  fr.onload=async()=>{try{await loadText(fr.result,f.name,true)}catch(e){showErr('Não foi possível ler o arquivo: '+e.message)}};
+  fr.onerror=()=>showErr('Falha ao ler o arquivo.'); fr.readAsText(f,'utf-8');
+}
+$('#drop').onclick=()=>$('#file').click();
+$('#file').onchange=e=>handleFile(e.target.files[0]);
+$('#btn-reload').onclick=()=>{$('#loader').style.display='flex'};
+['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('over')}));
+['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('over')}));
+$('#drop').addEventListener('drop',e=>handleFile(e.dataTransfer.files[0]));
+
+(async function boot(){
+  try{const c=await IDB.get('base');if(c&&c.text){await loadText(c.text,c.name,false);return}}catch(e){}
+  if(/^https?:/.test(location.protocol)){
+    for(const n of ['base_suporte_2026-11-04.json','base_suporte.json']){
+      try{const r=await fetch(n);if(r.ok){await loadText(await r.text(),n,true);return}}catch(e){}
+    }
+  }
+})();
+
+/* ═══════════════ FILTROS ═══════════════ */
+function monthsSet(){
+  const p=S.period; if(p==='all')return new Set([1,2,3,4,5,6,7,8,9,10,11,12]);
+  if(p==='cmp')return new Set(Array.from({length:META.lastFull},(_,i)=>i+1));
+  return new Set([+p]);
+}
+function opt(v,t,sel){return `<option value="${esc(v)}"${String(sel)===String(v)?' selected':''}>${esc(t)}</option>`}
+function initFilters(){
+  $('#f-year').innerHTML=opt('both','2025 × 2026',S.year)+opt('2026','Somente 2026',S.year)+opt('2025','Somente 2025',S.year);
+  $('#f-period').innerHTML=opt('cmp',`${MES[0]}–${MES[META.lastFull-1]} (período comparável)`,S.period)+opt('all','Ano completo (2026 só até '+fmtD(META.cutoff)+')',S.period)+MESL.map((m,i)=>opt(i+1,m,S.period)).join('');
+  $('#f-dtype').innerHTML=opt('all','Sábados, domingos e feriados',S.dtype)+opt('sab','Somente sábados',S.dtype)+opt('dom','Somente domingos',S.dtype)+opt('fer','Somente feriados',S.dtype);
+  const cnt=new Map();for(const r of RECS)cnt.set(r.sysK,(cnt.get(r.sysK)||0)+1);
+  const sysList=[...cnt].sort((a,b)=>b[1]-a[1]);
+  $('#f-sys').innerHTML=opt('all','Todas as categorias',S.sys)+sysList.map(([k])=>opt(k,SYSN.get(k),S.sys)).join('');
+  $('#f-sector').innerHTML=opt('all','Todos os setores',S.sector)+SETORES.map((n,i)=>opt(i,n,S.sector)).join('');
+  $('#f-channel').innerHTML=opt('T','Chamados',S.channel)+opt('W','WhatsApp',S.channel)+opt('all','Chamados + WhatsApp',S.channel);
+  $('#f-basis').innerHTML=opt('open','Abertura (demanda recebida)',S.basis)+opt('close','Fechamento (data do JSON)',S.basis);
+  $('#hdr-base').textContent=`${META.name} · ${nf(META.nT+META.nW)} registros`;
+}
+const MAP={'f-year':'year','f-period':'period','f-dtype':'dtype','f-sys':'sys','f-sector':'sector','f-channel':'channel','f-basis':'basis'};
+for(const id in MAP)$('#'+id).onchange=e=>{S[MAP[id]]=e.target.value;S.day=null;S.page=0;render()};
+$('#btn-clear').onclick=()=>{Object.assign(S,DEF,{day:null,page:0,q:'',dayFilter:'all'});initFilters();render()};
+$('#seg-mon').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.monthMode=b.dataset.m;render()};
+$('#seg-tab').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.tab=b.dataset.t;S.page=0;render()};
+
+/* ═══════════════ CÁLCULO ═══════════════ */
+function passes(r){
+  if(S.channel!=='all'&&r.ch!==S.channel)return false;
+  if(S.sector!=='all'&&r.s!==+S.sector)return false;
+  if(S.sys!=='all'&&r.sysK!==S.sys)return false;
+  return true;
+}
+function compute(Y,basis){
+  basis=basis||S.basis; const months=monthsSet();
+  const days=[]; const end=Date.UTC(Y,11,31);
+  for(let ts=Date.UTC(Y,0,1);ts<=end&&ts<=META.cutoff;ts+=DAY){
+    const mo=new Date(ts).getUTCMonth()+1; if(!months.has(mo))continue;
+    const t=dayType(ts); if(!t||(S.dtype!=='all'&&S.dtype!==t))continue;
+    days.push({ts,t,mo});
+  }
+  const recs=[],byDay=new Map();
+  const typeTot={sab:0,dom:0,fer:0},typeDays={sab:0,dom:0,fer:0};
+  const mon=Array.from({length:13},()=>({n:0,d:0}));
+  const sysM=new Map(),clsM=new Map(),ttc=[0,0,0,0];let waN=0,robot=0;
+  for(const d of days){typeDays[d.t]++;mon[d.mo].d++}
+  for(const r of RECS){
+    const o=basis==='open', t=o?r.tO:r.tC; if(!t)continue;
+    if((o?r.yO:r.yC)!==Y)continue; const mo=o?r.mO:r.mC; if(!months.has(mo))continue;
+    if(S.dtype!=='all'&&S.dtype!==t)continue; if(!passes(r))continue;
+    const ts=o?r.open:r.close; recs.push({r,ts,t});
+    byDay.set(ts,(byDay.get(ts)||0)+1); typeTot[t]++; mon[mo].n++;
+    sysM.set(r.sysK,(sysM.get(r.sysK)||0)+1); clsM.set(r.clsK,(clsM.get(r.clsK)||0)+1);
+    ttc[r.td===0?0:r.td===1?1:r.td<=3?2:3]++;
+    if(r.ch==='W'){waN++;if(r.op===ROBOT)robot++}
+  }
+  const total=recs.length, nd=days.length;
+  const BINS=[[0,0,'0'],[1,5,'1–5'],[6,10,'6–10'],[11,20,'11–20'],[21,40,'21–40'],[41,1e9,'41+']];
+  const hist=BINS.map(b=>({lbl:b[2],n:0}));
+  let zero=0;
+  for(const d of days){const n=byDay.get(d.ts)||0;if(!n)zero++;hist[BINS.findIndex(b=>n>=b[0]&&n<=b[1])].n++}
+  const top=days.map(d=>({ts:d.ts,t:d.t,n:byDay.get(d.ts)||0})).sort((a,b)=>b.n-a.n||b.ts-a.ts).slice(0,10);
+  return {Y,recs,days,byDay,typeTot,typeDays,mon,sysM,clsM,ttc,waN,robot,total,nd,zero,hist,top,
+          avg:nd?total/nd:null,sab:typeTot.sab,dom:typeTot.dom,fer:typeTot.fer,
+          topShare:total?top.reduce((s,x)=>s+x.n,0)/total*100:0};
+}
+const yearsSel=()=>S.year==='both'?YEARS:[+S.year];
+function getC(basis){const o={};for(const Y of yearsSel())o[Y]=compute(Y,basis);return o}
+
+/* ═══════════════ GRÁFICOS (SVG próprio, sem dependências) ═══════════════ */
+function scale(vmax){
+  const raw=(vmax*1.12)/4||1,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;
+  const s=(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p, n=Math.max(1,Math.ceil(vmax*1.12/s));
+  return {step:s,top:s*n,n};
+}
+function legend(el,ys){el.innerHTML=ys.slice().reverse().map(y=>`<span><i style="background:${COL[y]}"></i>${y}</span>`).join('')}
+function chartV(el,o){
+  const ys=o.years,W=Math.max(280,el.clientWidth),H=o.h||260,hasSub=o.cats.some(c=>c.sub);
+  const m={l:38,r:8,t:18,b:hasSub?52:30},pw=W-m.l-m.r,ph=H-m.t-m.b;
+  const vmax=Math.max(0,...o.cats.flatMap(c=>ys.map(y=>c.vals[y]||0)));
+  const sc=scale(vmax||1),dec=sc.step%1?1:0,Yp=v=>m.t+ph-(v/sc.top)*ph;
+  let g='';
+  for(let i=0;i<=sc.n;i++){const v=sc.step*i,y=Yp(v);
+    g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" stroke="${i?'#eef1f4':'#cfd6de'}"/><text x="${m.l-6}" y="${y+3.5}" text-anchor="end" font-size="10" fill="#9aa7b4">${o.axisFmt?o.axisFmt(v):nf(v,dec)}</text>`}
+  const gw=pw/o.cats.length,inner=gw*0.8,bw=Math.min(40,inner/ys.length);
+  o.cats.forEach((c,i)=>{
+    const gx=m.l+i*gw,x0=gx+(gw-bw*ys.length)/2;
+    g+=`<rect x="${gx}" y="${m.t}" width="${gw}" height="${ph}" fill="transparent" data-tip="${esc(c.tip||'')}"/>`;
+    ys.forEach((y,j)=>{
+      const v=c.vals[y],x=x0+j*bw;
+      if(v==null){ if(bw>10)g+=`<text x="${x+bw/2}" y="${m.t+ph-4}" text-anchor="middle" font-size="9.5" fill="#9aa7b4">${c.na&&c.na[y]||'—'}</text>`;return}
+      const h=(v/sc.top)*ph;
+      g+=`<rect x="${x+1}" y="${Yp(v)}" width="${Math.max(2,bw-2)}" height="${Math.max(h,0)}" rx="2" fill="${COL[y]}" pointer-events="none"/>`;
+      if(bw>=13)g+=`<text x="${x+bw/2}" y="${Yp(v)-4}" text-anchor="middle" font-size="${y===2026?11:10}" font-weight="${y===2026?700:500}" fill="${y===2026?'#b53d00':'#5b6b7c'}" pointer-events="none">${o.fmt?o.fmt(v):nf(v)}</text>`;
+    });
+    g+=`<text x="${gx+gw/2}" y="${H-m.b+16}" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1d2733">${esc(c.label)}</text>`;
+    if(c.sub)(Array.isArray(c.sub)?c.sub:[c.sub]).forEach((s,k)=>g+=`<text x="${gx+gw/2}" y="${H-m.b+30+k*12}" text-anchor="middle" font-size="9.5" fill="#9aa7b4">${esc(s)}</text>`);
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${g}</svg>`;
+}
+function chartH(el,o){
+  const ys=o.years,W=Math.max(280,el.clientWidth),labW=Math.min(170,W*.36),room=84,bh=11,gap=2;
+  const rowH=ys.length*(bh+gap)+12,H=o.rows.length*rowH+6,aw=W-labW-room;
+  const vmax=Math.max(1,...o.rows.flatMap(r=>ys.map(y=>r.vals[y]||0)));
+  let g='';
+  o.rows.forEach((r,i)=>{
+    const y0=i*rowH+4,maxc=Math.floor(labW/6.2);
+    g+=`<rect x="0" y="${y0-2}" width="${W}" height="${rowH-2}" fill="transparent" data-tip="${esc(r.tip||'')}"/>`;
+    g+=`<text x="${labW-8}" y="${y0+rowH/2-1}" text-anchor="end" font-size="11.5" fill="#1d2733" pointer-events="none">${esc(r.label.length>maxc?r.label.slice(0,maxc-1)+'…':r.label)}</text>`;
+    ys.slice().reverse().forEach((y,j)=>{
+      const v=r.vals[y]||0,w=v/vmax*aw,yy=y0+j*(bh+gap);
+      g+=`<rect x="${labW}" y="${yy}" width="${Math.max(v?2:0,w)}" height="${bh}" rx="2" fill="${COL[y]}" pointer-events="none"/>`;
+      g+=`<text x="${labW+w+5}" y="${yy+bh-2}" font-size="10.5" font-weight="${y===2026?700:500}" fill="${y===2026?'#b53d00':'#5b6b7c'}" pointer-events="none">${nf(v)} · ${nf(pc(v,o.totals[y]),0)}%</text>`;
+    });
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${g}</svg>`;
+}
+
+/* ═══════════════ RENDER ═══════════════ */
+let C={};
+function render(){
+  if(!RECS.length&&!META.nRecs){return}
+  const ys=yearsSel(); C=getC();
+  const both=ys.length===2,c25=C[2025],c26=C[2026];
+  // linha de base
+  const bl=S.basis==='open'?'<b>Abertura</b> (demanda recebida)':'<b>Fechamento</b>';
+  const per=S.period==='cmp'?`${MES[0]}–${MES[META.lastFull-1]}`:S.period==='all'?'ano completo':MESL[S.period-1];
+  $('#basis-line').innerHTML=`<span class="pill pill26">2026</span><span class="pill pill25">2025</span>
+    <span>Data de referência: ${bl}</span>·<span>Período: <b>${per}</b></span>·<span>Canal: <b>${{T:'Chamados',W:'WhatsApp',all:'Chamados + WhatsApp'}[S.channel]}</b></span>·
+    <span>Base com dados até <b>${fmtD(META.cutoff)}</b></span>`;
+  // avisos
+  let w='';
+  if(S.period==='all'&&both)w+=`<div class="warn"><b>Atenção:</b> com “ano completo”, 2025 tem 12 meses e 2026 só vai até ${fmtD(META.cutoff)}. Para comparar de forma proporcional use <b>${MES[0]}–${MES[META.lastFull-1]} (período comparável)</b> ou observe a <b>média por dia de plantão</b>.</div>`;
+  if(both&&c25.nd!==c26.nd)w+=`<div class="warn"><b>Atenção:</b> os períodos têm quantidades diferentes de dias de plantão (${c25.nd} em 2025 × ${c26.nd} em 2026). Compare principalmente a média por dia.</div>`;
+  $('#warns').innerHTML=w;
+  renderNotes(); renderKpis(ys,c25,c26,both); renderMonthly(ys); renderTypes(ys); renderDist(ys); renderHist(ys); renderTops(ys); renderQA(ys,both);
+  renderDetail(ys);
+}
+function renderKpis(ys,c25,c26,both){
+  const cards=[
+   {l:'Demandas em fins de semana e feriados',f:c=>c.total,s:c=>`${nf(c.sab+c.dom)} em fins de semana · ${nf(c.fer)} em feriados`},
+   {l:'Fins de semana (sáb + dom)',f:c=>c.sab+c.dom,s:c=>`sábados ${nf(c.sab)} · domingos ${nf(c.dom)}`},
+   {l:'Feriados selecionados',f:c=>c.fer,s:c=>c.typeDays.fer?`${c.typeDays.fer} feriado(s) no período`:'nenhum feriado no filtro'},
+   {l:'Dias de plantão analisados',f:c=>c.nd,s:c=>`${c.typeDays.sab} sáb · ${c.typeDays.dom} dom · ${c.typeDays.fer} feriados`,noDelta:true},
+   {l:'Média por dia de plantão',f:c=>c.avg,dec:1,s:c=>`sáb ${nf(c.typeDays.sab?c.sab/c.typeDays.sab:null,1)} · dom ${nf(c.typeDays.dom?c.dom/c.typeDays.dom:null,1)} · fer ${nf(c.typeDays.fer?c.fer/c.typeDays.fer:null,1)}`},
+   {l:'Dias de plantão sem nenhuma demanda',f:c=>c.zero,s:c=>`${nf(pc(c.zero,c.nd),0)}% dos dias de plantão`}
+  ];
+  $('#kpis').innerHTML=cards.map(k=>{
+    const v26=c26?k.f(c26):null,v25=c25?k.f(c25):null,main=c26?v26:v25,mainY=c26?2026:2025;
+    const dl=both&&!k.noDelta?dlHtml(delta(v25,v26)):'';
+    const sub=(c26||c25)?k.s(c26||c25):'';
+    return `<div class="kpi" ${mainY===2025?'style="border-top-color:#7794b3"':''}><div class="kl">${k.l}</div>
+      <div class="kv" ${mainY===2025?'style="color:#003366"':''}>${nf(main,k.dec||0)}<small>${mainY}</small></div>
+      ${both?`<div class="kr"><span>2025: <b>${nf(v25,k.dec||0)}</b></span>${dl}</div>`:''}
+      <div class="ks">${sub}${both&&k.noDelta?` · 2025: ${k.s(c25)}`:''}</div></div>`;
+  }).join('');
+}
+function renderMonthly(ys){
+  const months=[...monthsSet()].sort((a,b)=>a-b),avg=S.monthMode==='avg';
+  $('#seg-mon').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.monthMode));
+  legend($('#legend1'),ys);
+  const cats=months.map(mo=>{
+    const vals={},na={},tipP=[];
+    ys.forEach(Y=>{
+      const c=C[Y],x=c.mon[mo],avail=Date.UTC(Y,mo-1,1)<=META.cutoff;
+      if(!avail){vals[Y]=null;na[Y]='s/d';tipP.push(`${Y}: sem dados`);return}
+      if(!x.d){vals[Y]=null;na[Y]='—';tipP.push(`${Y}: sem dias de plantão no filtro`);return}
+      vals[Y]=avg?x.n/x.d:x.n; tipP.push(`<b>${Y}</b>: ${nf(x.n)} demandas em ${x.d} dias → média ${nf(x.n/x.d,1)}/dia`);
+    });
+    return {label:MES[mo-1],vals,na,tip:`<b>${MESL[mo-1]}</b><br>${tipP.reverse().join('<br>')}`};
+  });
+  $('#mon-sub').textContent=avg?'Média de demandas por dia de plantão em cada mês':'Total de demandas recebidas em cada mês';
+  chartV($('#ch-mon'),{cats,years:ys,fmt:avg?v=>nf(v,1):undefined,h:270});
+}
+function renderTypes(ys){
+  legend($('#legend2'),ys);
+  const types=S.dtype==='all'?['sab','dom','fer']:[S.dtype];
+  const mk=avg=>types.map(t=>{
+    const vals={},tp=[],sub=[];
+    ys.forEach(Y=>{const c=C[Y],n=c.typeTot[t],d=c.typeDays[t];vals[Y]=avg?(d?n/d:null):n;tp.push(`<b>${Y}</b>: ${nf(n)} demandas em ${d} dia(s) → média ${nf(d?n/d:null,1)}/dia`)});
+    ys.slice().reverse().forEach(Y=>sub.push(`${Y}: ${C[Y].typeDays[t]} dia(s)`));
+    return {label:TPL[t],sub:sub.join(' · '),vals,tip:`<b>${TPL[t]}</b><br>${tp.reverse().join('<br>')}`};
+  });
+  chartV($('#ch-type-t'),{cats:mk(false),years:ys,h:250});
+  chartV($('#ch-type-a'),{cats:mk(true),years:ys,h:250,fmt:v=>nf(v,1)});
+}
+function distRows(ys,key,names,N){
+  const Ymain=ys[ys.length-1];
+  const keys=new Set();ys.forEach(Y=>C[Y][key].forEach((_,k)=>keys.add(k)));
+  const arr=[...keys].map(k=>({k,vals:Object.fromEntries(ys.map(Y=>[Y,C[Y][key].get(k)||0]))}));
+  arr.sort((a,b)=>(b.vals[Ymain]-a.vals[Ymain])||(ys.length>1?b.vals[ys[0]]-a.vals[ys[0]]:0));
+  const top=arr.slice(0,N),rest=arr.slice(N);
+  const rows=top.map(a=>({label:names.get(a.k)||a.k,vals:a.vals}));
+  if(rest.length){const v={};ys.forEach(Y=>v[Y]=rest.reduce((s,a)=>s+a.vals[Y],0));rows.push({label:`Outros (${rest.length})`,vals:v})}
+  const totals=Object.fromEntries(ys.map(Y=>[Y,C[Y].total]));
+  rows.forEach(r=>r.tip=`<b>${esc(r.label)}</b><br>`+ys.slice().reverse().map(Y=>`${Y}: ${nf(r.vals[Y])} (${nf(pc(r.vals[Y],totals[Y]),1)}%)`).join('<br>'));
+  return {rows,totals};
+}
+function renderDist(ys){
+  [['#ch-sys','sysM',SYSN,'#legend3'],['#ch-cls','clsM',CLSN,'#legend4']].forEach(([id,key,names,lg])=>{
+    legend($(lg),ys);
+    if(ys.every(Y=>!C[Y].total)){$(id).innerHTML='<div class="empty">Sem demandas com os filtros atuais.</div>';return}
+    const d=distRows(ys,key,names,8);chartH($(id),{rows:d.rows,totals:d.totals,years:ys});
+  });
+}
+function renderHist(ys){
+  legend($('#legend5'),ys);
+  const L=C[ys[0]].hist.map(h=>h.lbl);
+  const cats=L.map((l,i)=>{
+    const vals={},tp=[];
+    ys.forEach(Y=>{const c=C[Y],n=c.hist[i].n;vals[Y]=c.nd?n/c.nd*100:null;tp.push(`<b>${Y}</b>: ${n} de ${c.nd} dias (${nf(pc(n,c.nd),0)}%)`)});
+    return {label:l==='0'?'0 (sem demanda)':l,vals,tip:`<b>Dias com ${l} demanda(s)</b><br>${tp.reverse().join('<br>')}`};
+  });
+  chartV($('#ch-hist'),{cats,years:ys,h:250,fmt:v=>nf(v,0)+'%',axisFmt:v=>nf(v,0)+'%'});
+}
+function dayLabel(ts,t){const hn=HOLIDAYS[iso(ts)];return `${fmtD(ts).slice(0,5)} <small>${DOW[dow(ts)]}${hn?' · '+esc(hn):''}</small>`}
+function renderTops(ys){
+  $('#tops').innerHTML=ys.slice().reverse().map(Y=>{
+    const c=C[Y],mx=Math.max(1,...c.top.map(x=>x.n));
+    if(!c.total)return `<div><h4 class="${Y===2026?'y26':'y25'}">${Y}</h4><div class="empty">Sem demandas.</div></div>`;
+    return `<div><h4 class="${Y===2026?'y26':'y25'}">${Y}</h4>`+c.top.map(x=>`<div class="trow" data-ts="${x.ts}" data-tip="<b>${fmtD(x.ts)}</b> — ${TNAME[x.t]}${HOLIDAYS[iso(x.ts)]?' ('+HOLIDAYS[iso(x.ts)]+')':''}<br>${x.n} demandas">
+        <span class="dn">${dayLabel(x.ts,x.t)}</span><span class="tbar"><i style="width:${x.n/mx*100}%;background:${COL[Y]}"></i></span><span class="tv">${x.n}</span></div>`).join('')+
+      `<div class="tsum">Os 10 maiores dias somam <b>${nf(c.topShare,0)}%</b> das demandas do período (de ${c.nd} dias de plantão).</div></div>`;
+  }).join('');
+  $('#tops').querySelectorAll('.trow').forEach(r=>r.onclick=()=>{S.day=+r.dataset.ts;S.tab='dem';S.page=0;renderDetail(yearsSel());$('#detail-card').scrollIntoView({behavior:'smooth',block:'start'})});
+}
+
+/* ═══════════════ LEITURA DOS NÚMEROS ═══════════════ */
+function topOf(c,key,names){let b=null;c[key].forEach((n,k)=>{if(!b||n>b.n)b={k,n}});return b?{name:names.get(b.k)||b.k,n:b.n,p:pc(b.n,c.total)}:null}
+function renderQA(ys,both){
+  const c25=C[2025],c26=C[2026],cm=C[ys[ys.length-1]],Ym=cm.Y;
+  const D=(a,b)=>{const d=delta(a,b);return d&&d.p!=null?`<b class="${d.p>0?'n':'o'}">${d.t.replace(/^[▲▼] /,'')}</b>`:'<b>n/d</b>'};
+  // sensibilidade à base de data
+  let alt='';
+  if(both){const ob=S.basis==='open'?'close':'open',a=getC(ob),d=delta(a[2025].total,a[2026].total),da=delta(a[2025].avg,a[2026].avg);
+    alt=`Sensibilidade: pela data de <b>${ob==='open'?'abertura':'fechamento'}</b>, o total iria de ${nf(a[2025].total)} (2025) para ${nf(a[2026].total)} (2026) — ${d.t.replace(/^[▲▼] /,'')}.`}
+  const q1=ys.slice().reverse().map(Y=>{const c=C[Y];return `<li><b class="${Y===2026?'o':'n'}">${Y}</b>: <b>${nf(c.total)}</b> demandas em <b>${c.nd}</b> dias de plantão (${nf(c.sab+c.dom)} em fins de semana, ${nf(c.fer)} em feriados).</li>`}).join('');
+  const q2=both?`<li>Volume total: ${nf(c25.total)} → ${nf(c26.total)} (${D(c25.total,c26.total)}).</li>
+    <li>Média por dia de plantão: ${nf(c25.avg,1)} → ${nf(c26.avg,1)} (${D(c25.avg,c26.avg)}).</li>
+    <li>Fins de semana: ${D(c25.sab+c25.dom,c26.sab+c26.dom)} · feriados: ${D(c25.fer,c26.fer)}.</li>`:`<li>Selecione “2025 × 2026” para ver a variação.</li>`;
+  const tail=alt?`<p class="fn">${alt}</p>`:'';
+  const ts=topOf(cm,'sysM',SYSN),tc=topOf(cm,'clsM',CLSN);
+  let mmax=null;for(let m=1;m<=12;m++){const x=cm.mon[m];if(x.n&&(!mmax||x.n>mmax.n))mmax={m,n:x.n}}
+  const t1=cm.top[0];
+  const q3=cm.total?`<li>Categoria predominante em ${Ym}: <b>${esc(ts.name)}</b> (${nf(ts.n)} · ${nf(ts.p,0)}%).</li>
+    <li>Classificação predominante: <b>${esc(tc.name)}</b> (${nf(tc.n)} · ${nf(tc.p,0)}%).</li>
+    ${mmax&&months1()?`<li>Mês de maior volume: <b>${MESL[mmax.m-1]}</b> (${nf(mmax.n)}).</li>`:''}
+    <li>Os 10 maiores dias concentram <b>${nf(cm.topShare,0)}%</b> das demandas; o maior dia foi <b>${fmtD(t1.ts)}</b> (${t1.n}${HOLIDAYS[iso(t1.ts)]?', '+esc(HOLIDAYS[iso(t1.ts)]):''}).</li>`:'<li>Sem demandas com os filtros atuais.</li>';
+  const q4=ys.slice().reverse().map(Y=>{const c=C[Y],a=t=>c.typeDays[t]?nf(c[t]/c.typeDays[t],1):'—';return `<li><b class="${Y===2026?'o':'n'}">${Y}</b>: <b>${nf(c.avg,1)}</b> por dia · sábado ${a('sab')} · domingo ${a('dom')} · feriado ${a('fer')}.</li>`}).join('');
+  const q5=ys.slice().reverse().map(Y=>{const c=C[Y],le5=c.hist[0].n+c.hist[1].n,tt=c.ttc,tot=tt[0]+tt[1]+tt[2]+tt[3];
+    return `<li><b class="${Y===2026?'o':'n'}">${Y}</b> — dias sem demanda: <b>${c.zero}</b> de ${c.nd} (${nf(pc(c.zero,c.nd),0)}%) · dias com até 5 demandas: <b>${nf(pc(le5,c.nd),0)}%</b> · demandas fechadas no mesmo dia: <b>${nf(pc(tt[0],tot),0)}%</b>, em até 1 dia: <b>${nf(pc(tt[0]+tt[1],tot),0)}%</b>${c.waN?` · atendimentos WhatsApp pelo robô: <b>${nf(pc(c.robot,c.waN),0)}%</b>`:''}.</li>`}).join('');
+  $('#qa').innerHTML=`
+   <div class="q"><h4>1. Quantas demandas o Suporte recebe em fins de semana e feriados?</h4><ul>${q1}</ul></div>
+   <div class="q"><h4>2. Aumentou ou diminuiu de 2025 para 2026?</h4><ul>${q2}</ul>${tail}</div>
+   <div class="q"><h4>3. Há concentração em dias, meses, categorias ou classificações?</h4><ul>${q3}</ul></div>
+   <div class="q"><h4>4. Qual a média de demandas por dia de plantão?</h4><ul>${q4}</ul></div>
+   <div class="q last"><h4>5. Elementos objetivos para a decisão sobre a manutenção do plantão</h4><ul>${q5}</ul>
+   <p class="fn">O painel não recomenda manter ou encerrar o plantão: reúne os números que sustentam a análise. “Fechadas no mesmo dia” considera a diferença em dias entre abertura e fechamento (sem horário).</p></div>`;
+}
+const months1=()=>monthsSet().size>1;
+
+/* ═══════════════ PONTOS DE ATENÇÃO ═══════════════ */
+let notesDone=false;
+function renderNotes(){
+  if(notesDone)return; notesDone=true;
+  const M=META,items=[
+   `<b>Data de referência.</b> No JSON, <code>y/m/d</code> é a data de <b>fechamento</b> e <code>td</code> é o nº de dias até o fechamento. A data de <b>abertura</b> (demanda recebida) foi calculada como fechamento − <code>td</code>, com precisão de dia (sem horário). O painel usa a <b>abertura</b> por padrão; a alternância para fechamento está no filtro “Data de referência”. <b>A escolha altera de forma relevante os totais</b> — veja “Sensibilidade” na pergunta 2.`,
+   `<b>Somente chamados fechados.</b> A base contém registros já fechados até <b>${fmtD(M.cutoff)}</b>; demandas ainda abertas nessa data não constam, e 2026 cobre jan–${MES[M.lastFull-1].toLowerCase()}. Por isso o padrão é o <b>período comparável</b>. Por abertura, os últimos dias antes do corte podem estar subestimados.`,
+   `<b>Corpus Christi (feriado móvel).</b> O enunciado cita 04/06; essa data vale para 2026, mas em 2025 o feriado foi <b>19/06</b>. Evidência na base: em 04/06/2025 há ${nf(M.c0604)} chamados fechados (dia útil normal) e em 19/06/2025 apenas ${nf(M.c1906)}. Foram adotados <b>19/06/2025</b> e <b>04/06/2026</b>. São Sebastião (20/01) e São Jorge (23/04) são fixos. Nenhum feriado coincide com sábado ou domingo em 2025–2026.`,
+   `<b>Setores.</b> A base reúne 5 setores “Suporte …” (${SETORES.join('; ')}). Por padrão todos entram; use o filtro <b>Setor</b> para isolar, por exemplo, apenas “Suporte Técnico”.`,
+   `<b>Canais.</b> Chamados (${nf(M.nT)}) e WhatsApp (${nf(M.nW)}) são fontes distintas, sem IDs em comum. O padrão é <b>Chamados</b>; o WhatsApp pode ser incluído no filtro Canal (inclui atendimentos do “${ROBOT}”).`,
+   `<b>Limites da base.</b> Chamados não têm horário nem operador: não é possível separar fechamento automático de atendimento humano de plantão, nem saber a hora em que a demanda chegou. Os números mostram volume, não esforço de atendimento.`,
+   `<b>Padronização de rótulos.</b> Para agrupar, foram removidos prefixos numéricos das categorias (ex.: “02 - SIGA 2” e “08-SIGA 2” → SIGA 2) e unificadas classificações que diferem só em maiúsculas/minúsculas. ${nf(M.emptyCls)} registros sem classificação aparecem como “${NOCLS}”. Os dados originais não foram alterados.`,
+   `<b>Integridade.</b> ${nf(M.nRecs)} registros relevantes de ${nf(M.nT+M.nW)} lidos; IDs duplicados: ${M.dup}; datas inválidas: ${M.invalid}. Cada demanda é contada uma única vez, em um único dia e tipo de dia. ${M.tdBig?`Há ${M.tdBig} registro(s) com <code>td</code> ≥ 365 dias (ex.: ${M.bigEx.join(', ')}); por abertura caem antes de 2025 e ficam fora do recorte.`:''}`
+  ];
+  $('#notes-sum').textContent=`Pontos de atenção sobre a base (${items.length}) — leia antes de apresentar`;
+  $('#notes-body').innerHTML='<ol>'+items.map(i=>`<li>${i}</li>`).join('')+'</ol>';
+}
+
+/* ═══════════════ DETALHAMENTO ═══════════════ */
+function detailRows(ys){
+  const o=[];
+  ys.forEach(Y=>C[Y].recs.forEach(x=>o.push(x)));
+  return o;
+}
+function typeTag(t,ts){return `<span class="tag ${t}">${TNAME[t]}${t==='fer'?': '+esc(HOLIDAYS[iso(ts)]||''):''}</span>`}
+function renderDetail(ys){
+  $('#seg-tab').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
+  const tools=$('#dtools'),wrap=$('#dwrap'),pg=$('#dpg'),PS=30;
+  const dayTag=S.day!=null?`<span class="tagday">Dia: ${fmtD(S.day)}<button title="Remover filtro de dia" id="clr-day">×</button></span>`:'';
+  if(S.tab==='dem'){
+    let rows=detailRows(ys);
+    if(S.day!=null)rows=rows.filter(x=>x.ts===S.day);
+    const q=S.q.trim().toLowerCase();
+    if(q)rows=rows.filter(x=>[x.r.id,SYSN.get(x.r.sysK),CLSN.get(x.r.clsK),SETORES[x.r.s],x.r.op,fmtD(x.ts)].join(' ').toLowerCase().includes(q));
+    const key={ref:x=>x.ts,id:x=>+x.r.id||0,sys:x=>SYSN.get(x.r.sysK),cls:x=>CLSN.get(x.r.clsK),td:x=>x.r.td,sec:x=>x.r.s,t:x=>x.t}[S.sort.k]||(x=>x.ts);
+    rows.sort((a,b)=>{const A=key(a),B=key(b);return (A>B?1:A<B?-1:0)*S.sort.dir||(b.ts-a.ts)});
+    const pages=Math.max(1,Math.ceil(rows.length/PS));S.page=Math.min(S.page,pages-1);
+    tools.innerHTML=`<input type="search" id="dq" placeholder="Buscar ticket, categoria, classificação, setor…" value="${esc(S.q)}">${dayTag}<span style="font-size:12px;color:var(--muted)">${nf(rows.length)} demanda(s)</span><div class="sp"></div><button class="btn" id="btn-csv">Exportar CSV</button>`;
+    const th=(k,t,cls='')=>`<th data-k="${k}" class="${cls}">${t}${S.sort.k===k?(S.sort.dir>0?' ▲':' ▼'):''}</th>`;
+    const hasT=rows.some(x=>x.r.ch==='T'),hasW=rows.some(x=>x.r.ch==='W');
+    wrap.innerHTML=`<table class="dt"><thead><tr>${th('ref',S.basis==='open'?'Data (abertura)':'Data (fechamento)')}${th('t','Tipo de dia')}${th('id','Ticket / ID')}<th class="ns">Canal</th>${th('sec','Setor')}${th('sys','Categoria')}${th('cls','Classificação')}<th class="ns">Aberto em</th><th class="ns">Fechado em</th>${th('td','Dias até fechar','num')}${hasW?'<th class="ns">Operador</th>':''}</tr></thead><tbody>`+
+     rows.slice(S.page*PS,S.page*PS+PS).map(x=>{const r=x.r;return `<tr><td>${fmtD(x.ts)} <small style="color:var(--muted)">${DOW[dow(x.ts)]}</small></td><td>${typeTag(x.t,x.ts)}</td><td>${esc(r.id)}</td><td><span class="tag ${r.ch==='T'?'t':'w'}">${r.ch==='T'?'Chamado':'WhatsApp'}</span></td><td>${esc(SETORES[r.s]||'—')}</td><td>${esc(SYSN.get(r.sysK))}</td><td class="wrap">${esc(CLSN.get(r.clsK))}</td><td>${fmtD(r.open)}</td><td>${fmtD(r.close)}</td><td class="num">${r.td}</td>${hasW?`<td>${esc(r.op)}</td>`:''}</tr>`}).join('')+
+     (rows.length?'':`<tr><td colspan="11" class="empty">Nenhuma demanda com os filtros atuais.</td></tr>`)+'</tbody></table>';
+    wrap.querySelectorAll('th[data-k]').forEach(h=>h.onclick=()=>{const k=h.dataset.k;S.sort=S.sort.k===k?{k,dir:-S.sort.dir}:{k,dir:k==='ref'?-1:1};renderDetail(ys)});
+    $('#btn-csv').onclick=()=>exportCsv(rows);
+    $('#dq').oninput=sd(e=>{S.q=e.target.value;S.page=0;renderDetail(ys);const i=$('#dq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250);
+    pager(pg,pages,rows.length,PS,ys);
+  }else{
+    let rows=[];ys.forEach(Y=>C[Y].days.forEach(d=>rows.push({Y,...d,n:C[Y].byDay.get(d.ts)||0})));
+    if(S.dayFilter==='com')rows=rows.filter(x=>x.n>0);if(S.dayFilter==='sem')rows=rows.filter(x=>!x.n);
+    if(S.day!=null)rows=rows.filter(x=>x.ts===S.day);
+    rows.sort((a,b)=>b.ts-a.ts);
+    const pages=Math.max(1,Math.ceil(rows.length/PS));S.page=Math.min(S.page,pages-1);
+    tools.innerHTML=`<select id="dfl"><option value="all"${S.dayFilter==='all'?' selected':''}>Todos os dias de plantão</option><option value="com"${S.dayFilter==='com'?' selected':''}>Somente dias com demanda</option><option value="sem"${S.dayFilter==='sem'?' selected':''}>Somente dias sem demanda</option></select>${dayTag}<span style="font-size:12px;color:var(--muted)">${nf(rows.length)} dia(s)</span><div class="sp"></div><button class="btn" id="btn-csv">Exportar CSV</button>`;
+    wrap.innerHTML=`<table class="dt"><thead><tr><th class="ns">Data</th><th class="ns">Dia da semana</th><th class="ns">Tipo de dia</th><th class="ns num">Demandas</th><th class="ns"></th></tr></thead><tbody>`+
+     rows.slice(S.page*PS,S.page*PS+PS).map(x=>`<tr><td>${fmtD(x.ts)}</td><td>${['domingo','segunda','terça','quarta','quinta','sexta','sábado'][dow(x.ts)]}</td><td>${typeTag(x.t,x.ts)}</td><td class="num"><b>${x.n}</b></td><td><a href="#" data-ts="${x.ts}" style="color:var(--orange-d);font-size:11.5px;text-decoration:none">ver demandas ›</a></td></tr>`).join('')+
+     (rows.length?'':`<tr><td colspan="5" class="empty">Nenhum dia com os filtros atuais.</td></tr>`)+'</tbody></table>';
+    wrap.querySelectorAll('a[data-ts]').forEach(a=>a.onclick=e=>{e.preventDefault();S.day=+a.dataset.ts;S.tab='dem';S.page=0;renderDetail(ys)});
+    $('#dfl').onchange=e=>{S.dayFilter=e.target.value;S.page=0;renderDetail(ys)};
+    $('#btn-csv').onclick=()=>exportCsv(null,rows);
+    pager(pg,pages,rows.length,PS,ys);
+  }
+  const cd=$('#clr-day');if(cd)cd.onclick=()=>{S.day=null;S.page=0;renderDetail(ys)};
+}
+function pager(el,pages,n,PS,ys){
+  el.innerHTML=n>PS?`<button class="btn" id="pp"${S.page<=0?' disabled':''}>‹ Anterior</button><span>Página ${S.page+1} de ${pages}</span><button class="btn" id="pn"${S.page>=pages-1?' disabled':''}>Próxima ›</button>`:'';
+  if(n>PS){$('#pp').onclick=()=>{S.page--;renderDetail(ys)};$('#pn').onclick=()=>{S.page++;renderDetail(ys)}}
+}
+function exportCsv(dem,dias){
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';let L;
+  if(dem){L=[['Data de referência','Tipo de dia','Feriado','Ticket/ID','Canal','Setor','Categoria','Classificação','Aberto em','Fechado em','Dias até fechar','Operador']];
+    dem.forEach(x=>L.push([fmtD(x.ts),TNAME[x.t],HOLIDAYS[iso(x.ts)]||'',x.r.id,x.r.ch==='T'?'Chamado':'WhatsApp',SETORES[x.r.s]||'',SYSN.get(x.r.sysK),CLSN.get(x.r.clsK),fmtD(x.r.open),fmtD(x.r.close),x.r.td,x.r.op]))}
+  else{L=[['Data','Dia da semana','Tipo de dia','Feriado','Demandas']];dias.forEach(x=>L.push([fmtD(x.ts),DOW[dow(x.ts)],TNAME[x.t],HOLIDAYS[iso(x.ts)]||'',x.n]))}
+  const blob=new Blob(['﻿'+L.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=dem?'demandas_plantao.csv':'dias_plantao.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+
+/* ═══════════════ TOOLTIP / RESIZE ═══════════════ */
+const tip=$('#tip');
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest&&e.target.closest('[data-tip]');
+  if(!t||!t.dataset.tip){tip.style.display='none';return}
+  tip.innerHTML=t.dataset.tip;tip.style.display='block';
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  tip.style.left=Math.min(e.clientX+14,innerWidth-w-8)+'px';tip.style.top=Math.min(e.clientY+14,innerHeight-h-8)+'px';
+});
+let lw=0;
+addEventListener('resize',sd(()=>{const w=innerWidth;if(w!==lw&&RECS.length){lw=w;render()}},200));
+window.__dash={S,compute,getC:()=>getC(),META:()=>META,render,loadText,HOLIDAYS};
+</script>
+</body>
+</html>
